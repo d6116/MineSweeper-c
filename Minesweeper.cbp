@@ -38,6 +38,21 @@
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="raygui.h" />
+		<Unit filename="sprites/covered_tile.png" />
+		<Unit filename="sprites/covered_tile_marked.png" />
+		<Unit filename="sprites/covered_tile_unsure.png" />
+		<Unit filename="sprites/tile_marked.png" />
+		<Unit filename="sprites/uncovered_1.png" />
+		<Unit filename="sprites/uncovered_2.png" />
+		<Unit filename="sprites/uncovered_3.png" />
+		<Unit filename="sprites/uncovered_4.png" />
+		<Unit filename="sprites/uncovered_5.png" />
+		<Unit filename="sprites/uncovered_6.png" />
+		<Unit filename="sprites/uncovered_7.png" />
+		<Unit filename="sprites/uncovered_8.png" />
+		<Unit filename="sprites/uncovered_bomb.png" />
+		<Unit filename="sprites/uncovered_tile.png" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

@@ -1,7 +1,17 @@
 # depslib dependency file v1.0
-1776184649 source:c:\users\gur dayan\documents\c_learning\minesweeper\main.c
+1776194709 source:c:\users\gur dayan\documents\c_learning\minesweeper\main.c
 	<stdio.h>
 	<stdlib.h>
 	<time.h>
 	"raylib.h"
+	"raygui.h"
+
+1776186462 c:\users\gur dayan\documents\c_learning\minesweeper\raygui.h
+	"raylib.h"
+	<stdio.h>
+	<string.h>
+	<stdarg.h>
+	<math.h>
+	<ctype.h>
+	<stdlib.h>
 

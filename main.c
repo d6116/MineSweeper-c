@@ -25,13 +25,22 @@ typedef struct visualCell
 } VisualCell;
 
 typedef enum {
-    FACE_NATURAL = 0;
-    FACE_SCARED = 1;
-    FACE_DEAD = 2;
-}
+    FACE_NATURAL = 0,
+    FACE_SCARED = 1,
+    FACE_DEAD = 2
+} DudeState;
 
+typedef struct dude {
+    DudeState state;
+    int posX;
+    int posY;
+} Dude;
+
+// declare functions
 Cell **GenerateNewBoard(int, int, int);
 int DiscoverEmptyCells(Cell**, int, int, int, int);
+
+
 int main()
 {
 
@@ -92,6 +101,13 @@ int main()
     cellBackgroundTextures[0] = LoadTexture("sprites\\covered_tile.png"); // the covered tile texture
     cellBackgroundTextures[1] = LoadTexture("sprites\\uncovered_tile.png"); // the uncovered tile texture
 
+    // faces
+    Texture *facesTextures = malloc(4 * sizeof(Texture));
+
+    facesTextures[0] = LoadTexture("sprites\\face_natural.png"); // normal face
+    facesTextures[1] = LoadTexture("sprites\\face_scared.png"); // scared face (when selecting cell)
+    facesTextures[2] = LoadTexture("sprites\\face_dead.png"); // self explanitory
+
     // other symbols
     Texture *otherSymbols = malloc(2 * sizeof(Texture));
 
@@ -145,21 +161,23 @@ int main()
         currentCellPosX = 0;
     }
 
+    // set size to match game
+    SetWindowSize(BOARD_WIDTH * CELL_WIDTH + BOARD_OFFSET_X, BOARD_HIGHT * CELL_HIGHT + BOARD_OFFSET_Y);
+
+
+    Dude scaredGuy;
+
+    scaredGuy.state = FACE_NATURAL;
+    scaredGuy.posX = GetScreenWidth() / 2 - 16;
+    scaredGuy.posY = 20;
 
 
 
-    // init
-
-
-
-
-
-
+    // --- START GAME LOOP ---
 
     SetTargetFPS(60);
 
-    // set size to match game
-    SetWindowSize(BOARD_WIDTH * CELL_WIDTH + BOARD_OFFSET_X, BOARD_HIGHT * CELL_HIGHT + BOARD_OFFSET_Y);
+
 
     // in-game vars
     bool is_mouse_0_down = false; // left click
@@ -168,8 +186,11 @@ int main()
     // Main Loop
     while (!WindowShouldClose())
     {
-        // update tick
+        // --- START OF UPDATE ---
         if (is_mouse_0_down){
+
+            scaredGuy.state = FACE_SCARED;
+
             if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)){ // on mouse 0 up
                 for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
                     if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
@@ -187,8 +208,12 @@ int main()
             }
 
         }
+        else{
+            scaredGuy.state = FACE_NATURAL;
+        }
 
         if (is_mouse_1_down){
+
             if (!IsMouseButtonDown(MOUSE_BUTTON_RIGHT)){ // on mouse 1 up
                 for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
                     if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
@@ -200,9 +225,17 @@ int main()
 
         }
 
+
+
+
+
         is_mouse_0_down = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
         is_mouse_1_down = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-        // draw
+
+        // --- END OF UPDATE ---
+
+
+        // --- START OF DRAWING ---
         BeginDrawing();
             ClearBackground(RAYWHITE);
 
@@ -210,7 +243,7 @@ int main()
 
 
 
-            // draw board
+            // --- Draw Board ---
             for (int c = 0; c < cellIndex; c++)
             {
                 VisualCell current_cell = visualCells[c];
@@ -234,13 +267,34 @@ int main()
             }
 
 
-            // draw ui header
-            GuiButton((Rectangle){0, 0, 200, 40}, "Button");
+            // --- Draw UI ---
 
+            // the scared guy
+
+            Texture sg_current_appearance;
+
+            switch (scaredGuy.state){
+                case FACE_NATURAL:
+                    sg_current_appearance = facesTextures[0];
+                    break;
+                case FACE_SCARED:
+                    sg_current_appearance = facesTextures[1];
+                    break;
+                case FACE_DEAD:
+                    sg_current_appearance = facesTextures[2];
+                    break;
+                default:
+                    sg_current_appearance = facesTextures[0];
+                    break;
+            }
+
+            DrawTextureEx(cellBackgroundTextures[0], (Vector2){scaredGuy.posX, scaredGuy.posY}, 0,  2, WHITE);
+            DrawTextureEx(sg_current_appearance, (Vector2){scaredGuy.posX, scaredGuy.posY}, 0, 2 , WHITE);
 
 
 
         EndDrawing();
+        // --- END OF DRAWING ---
     }
 
     return 0;
@@ -248,6 +302,7 @@ int main()
 
 int DiscoverEmptyCells(Cell **board, int row, int column, int rows, int columns)
 {
+
     board[row][column].isUncovered = true;
     for (int f = -1; f <= 1; f++) {
             for (int g = -1; g <= 1; g++) {
