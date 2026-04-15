@@ -7,7 +7,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-#define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+
 
 typedef struct cell
 {
@@ -22,6 +22,7 @@ typedef struct visualCell
     Rectangle btnRect; // rectangle for the button
     int posX;
     int posY;
+    int scale;
 } VisualCell;
 
 typedef enum {
@@ -126,7 +127,7 @@ int main()
     int currentCellPosX = 0;
     int currentCellPosY = 0;
 
-
+    const int BOARD_SCALE = 1;
 
     int margin = 0;
 
@@ -144,31 +145,31 @@ int main()
             vc.assignedCell = &board[r][c];
             vc.posX = currentCellPosX + BOARD_OFFSET_X;
             vc.posY = currentCellPosY + BOARD_OFFSET_Y;
-
+            vc.scale = BOARD_SCALE;
             vc.btnRect = (Rectangle){
                 currentCellPosX + BOARD_OFFSET_X,
                 currentCellPosY + BOARD_OFFSET_Y,
-                CELL_WIDTH,
-                CELL_HIGHT
+                CELL_WIDTH * BOARD_SCALE,
+                CELL_HIGHT * BOARD_SCALE
             };
 
             visualCells[cellIndex] = vc;
 
-            currentCellPosX += CELL_WIDTH + margin;
+            currentCellPosX += (CELL_WIDTH * BOARD_SCALE) + margin;
             cellIndex += 1;
         }
-        currentCellPosY += CELL_HIGHT + margin;
+        currentCellPosY += CELL_HIGHT * BOARD_SCALE + margin;
         currentCellPosX = 0;
     }
 
     // set size to match game
-    SetWindowSize(BOARD_WIDTH * CELL_WIDTH + BOARD_OFFSET_X, BOARD_HIGHT * CELL_HIGHT + BOARD_OFFSET_Y);
+    SetWindowSize((BOARD_WIDTH * CELL_WIDTH * BOARD_SCALE)  + BOARD_OFFSET_X, (BOARD_HIGHT * CELL_HIGHT * BOARD_SCALE)  + BOARD_OFFSET_Y);
 
 
     Dude scaredGuy;
 
     scaredGuy.state = FACE_NATURAL;
-    scaredGuy.posX = GetScreenWidth() / 2 - 16;
+    scaredGuy.posX = GetScreenWidth() / 2 - 32;
     scaredGuy.posY = 20;
 
 
@@ -247,21 +248,21 @@ int main()
             for (int c = 0; c < cellIndex; c++)
             {
                 VisualCell current_cell = visualCells[c];
-
+                Vector2 pos = (Vector2){current_cell.posX, current_cell.posY};
                     if (current_cell.assignedCell->isUncovered){
-                        DrawTexture(cellBackgroundTextures[1], current_cell.posX, current_cell.posY, WHITE);
+                        DrawTextureEx(cellBackgroundTextures[1], pos, 0, current_cell.scale, WHITE);
                         if (9 > current_cell.assignedCell->value && current_cell.assignedCell->value > 0)
                         {
-                            DrawTexture(numbersTextures[current_cell.assignedCell->value - 1], current_cell.posX, current_cell.posY, WHITE);
+                            DrawTextureEx(numbersTextures[current_cell.assignedCell->value - 1], pos, 0, current_cell.scale, WHITE);
                         }
                         else if (current_cell.assignedCell->value == -1){
-                            DrawTexture(otherSymbols[1], current_cell.posX, current_cell.posY, WHITE); // draw bomb
+                            DrawTextureEx(otherSymbols[1], pos, 0, current_cell.scale, WHITE); // draw bomb
                         }
                     }
                     else{
-                        DrawTexture(cellBackgroundTextures[0], current_cell.posX, current_cell.posY, WHITE);
+                        DrawTextureEx(cellBackgroundTextures[0], pos, 0, current_cell.scale, WHITE);
                         if (current_cell.assignedCell->isFlagged){
-                            DrawTexture(otherSymbols[0], current_cell.posX, current_cell.posY, WHITE);
+                            DrawTextureEx(otherSymbols[0], pos, 0, current_cell.scale, WHITE);
                         }
                     }
             }

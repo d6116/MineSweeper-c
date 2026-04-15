@@ -15,3 +15,19 @@
 	<ctype.h>
 	<stdlib.h>
 
+1776255426 source:c:\users\gurd6\documents\learning c\minesweeper-c\main.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	"raylib.h"
+	"raygui.h"
+
+1776233022 c:\users\gurd6\documents\learning c\minesweeper-c\raygui.h
+	"raylib.h"
+	<stdio.h>
+	<string.h>
+	<stdarg.h>
+	<math.h>
+	<ctype.h>
+	<stdlib.h>
+
