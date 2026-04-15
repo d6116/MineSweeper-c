@@ -33,14 +33,16 @@ typedef enum {
 
 typedef struct dude {
     DudeState state;
+    Rectangle btnRect;
     int posX;
     int posY;
+    bool isPressed;
 } Dude;
 
 // declare functions
 Cell **GenerateNewBoard(int, int, int);
 int DiscoverEmptyCells(Cell**, int, int, int, int);
-
+void ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin);
 
 int main()
 {
@@ -124,10 +126,9 @@ int main()
     const int CELL_HIGHT = 32;
     const int CELL_WIDTH = 32;
 
-    int currentCellPosX = 0;
-    int currentCellPosY = 0;
 
-    const int BOARD_SCALE = 1;
+
+    const int BOARD_SCALE = 2;
 
     int margin = 0;
 
@@ -136,35 +137,13 @@ int main()
 
 
     int cellIndex = 0;
-    for (int r = 0; r < BOARD_HIGHT; r++)
-    {
-        for (int c = 0; c < BOARD_WIDTH; c++)
-        {
-            VisualCell vc;
-
-            vc.assignedCell = &board[r][c];
-            vc.posX = currentCellPosX + BOARD_OFFSET_X;
-            vc.posY = currentCellPosY + BOARD_OFFSET_Y;
-            vc.scale = BOARD_SCALE;
-            vc.btnRect = (Rectangle){
-                currentCellPosX + BOARD_OFFSET_X,
-                currentCellPosY + BOARD_OFFSET_Y,
-                CELL_WIDTH * BOARD_SCALE,
-                CELL_HIGHT * BOARD_SCALE
-            };
-
-            visualCells[cellIndex] = vc;
-
-            currentCellPosX += (CELL_WIDTH * BOARD_SCALE) + margin;
-            cellIndex += 1;
-        }
-        currentCellPosY += CELL_HIGHT * BOARD_SCALE + margin;
-        currentCellPosX = 0;
-    }
+    ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
 
     // set size to match game
     SetWindowSize((BOARD_WIDTH * CELL_WIDTH * BOARD_SCALE)  + BOARD_OFFSET_X, (BOARD_HIGHT * CELL_HIGHT * BOARD_SCALE)  + BOARD_OFFSET_Y);
 
+
+    // scared guy button
 
     Dude scaredGuy;
 
@@ -172,6 +151,7 @@ int main()
     scaredGuy.posX = GetScreenWidth() / 2 - 32;
     scaredGuy.posY = 20;
 
+    scaredGuy.btnRect = (Rectangle){scaredGuy.posX, scaredGuy.posY, 64, 64};
 
 
     // --- START GAME LOOP ---
@@ -190,9 +170,27 @@ int main()
         // --- START OF UPDATE ---
         if (is_mouse_0_down){
 
-            scaredGuy.state = FACE_SCARED;
+            if (GetMousePosition().y > BOARD_OFFSET_Y){ // the player is pressing on the board
+                scaredGuy.state = FACE_SCARED;
+            }
+            else{
+                if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect)){
+                    scaredGuy.isPressed = true;
+                }
+            }
+
 
             if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)){ // on mouse 0 up
+
+                // scared guy button
+                if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect)){
+                    scaredGuy.isPressed = false;
+                    ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
+                    //ResetBoard(board, BOARD_WIDTH, BOARD_HIGHT, NUM_OF_BOMBS);
+                }
+
+                // board buttons
+
                 for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
                     if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
                         Cell* selected_cell = visualCells[c].assignedCell;
@@ -289,7 +287,7 @@ int main()
                     break;
             }
 
-            DrawTextureEx(cellBackgroundTextures[0], (Vector2){scaredGuy.posX, scaredGuy.posY}, 0,  2, WHITE);
+            DrawTextureEx(cellBackgroundTextures[scaredGuy.isPressed ? 1 : 0], (Vector2){scaredGuy.posX, scaredGuy.posY}, 0,  2, WHITE);
             DrawTextureEx(sg_current_appearance, (Vector2){scaredGuy.posX, scaredGuy.posY}, 0, 2 , WHITE);
 
 
@@ -327,7 +325,6 @@ int DiscoverEmptyCells(Cell **board, int row, int column, int rows, int columns)
 
 Cell **GenerateNewBoard(int rows, int columns, int num_of_bombs)
 {
-
 
     Cell *data = malloc(rows * columns * sizeof(Cell));
 
@@ -402,5 +399,43 @@ Cell **GenerateNewBoard(int rows, int columns, int num_of_bombs)
 
 
     return result;
+
+}
+
+void ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin)
+{
+    Cell **new_board = GenerateNewBoard(rows, columns, num_of_bombs);
+
+    last_board = new_board;
+
+    // reset visual cells
+    int currentCellPosX = 0;
+    int currentCellPosY = 0;
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; c < columns; c++)
+        {
+            VisualCell vc;
+
+            vc.assignedCell = &new_board[r][c];
+            vc.posX = currentCellPosX + board_offset.x;
+            vc.posY = currentCellPosY + board_offset.y;
+            vc.scale = board_scale;
+            vc.btnRect = (Rectangle){
+                currentCellPosX + board_offset.x,
+                currentCellPosY + board_offset.y,
+                32 * board_scale,
+                32 * board_scale
+            };
+
+            visual_cell_arr[*cell_index] = vc;
+
+            currentCellPosX += (32 * board_scale) + margin;
+            *cell_index += 1;
+        }
+        currentCellPosY += 32 * board_scale + margin;
+        currentCellPosX = 0;
+    }
 
 }
