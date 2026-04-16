@@ -41,8 +41,8 @@ typedef struct dude {
 
 // declare functions
 Cell **GenerateNewBoard(int, int, int);
-int DiscoverEmptyCells(Cell**, int, int, int, int);
-void ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin);
+void DiscoverEmptyCells(Cell**, VisualCell*, int, int, int, int);
+Cell **ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin);
 
 int main()
 {
@@ -137,7 +137,7 @@ int main()
 
 
     int cellIndex = 0;
-    ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
+    board = ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
 
     // set size to match game
     SetWindowSize((BOARD_WIDTH * CELL_WIDTH * BOARD_SCALE)  + BOARD_OFFSET_X, (BOARD_HIGHT * CELL_HIGHT * BOARD_SCALE)  + BOARD_OFFSET_Y);
@@ -185,7 +185,7 @@ int main()
                 // scared guy button
                 if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect)){
                     scaredGuy.isPressed = false;
-                    ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
+                    board = ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
                     //ResetBoard(board, BOARD_WIDTH, BOARD_HIGHT, NUM_OF_BOMBS);
                 }
 
@@ -197,7 +197,7 @@ int main()
                         if (!selected_cell->isFlagged) // uncover cell
                         {
                             if (selected_cell->value == 0)
-                                DiscoverEmptyCells(board, c / BOARD_WIDTH, c % BOARD_WIDTH, BOARD_HIGHT, BOARD_WIDTH);
+                                DiscoverEmptyCells(board, visualCells, c / BOARD_WIDTH, c % BOARD_WIDTH, BOARD_HIGHT, BOARD_WIDTH);
                             visualCells[c].assignedCell->isUncovered = true;
                         }
 
@@ -299,10 +299,11 @@ int main()
     return 0;
 }
 
-int DiscoverEmptyCells(Cell **board, int row, int column, int rows, int columns)
+void DiscoverEmptyCells(Cell **board, VisualCell* visualCells, int row, int column, int rows, int columns)
 {
-
+    printf("discovering at %i, %i\n", row, column);
     board[row][column].isUncovered = true;
+    //visualCells[row * columns + column].assignedCell->isUncovered = true;
     for (int f = -1; f <= 1; f++) {
             for (int g = -1; g <= 1; g++) {
                 int neighbor_r = row + f;
@@ -313,13 +314,12 @@ int DiscoverEmptyCells(Cell **board, int row, int column, int rows, int columns)
                     neighbor_c >= 0 && neighbor_c < columns) {
 
                     if (board[row][column].value == 0 && !board[neighbor_r][neighbor_c].isUncovered){
-                        DiscoverEmptyCells(board, neighbor_r, neighbor_c, rows, columns);
+                        DiscoverEmptyCells(board, visualCells, neighbor_r, neighbor_c, rows, columns);
                     }
                 }
             }
     }
-    return 1;
-    return 0;
+
 }
 
 
@@ -402,11 +402,26 @@ Cell **GenerateNewBoard(int rows, int columns, int num_of_bombs)
 
 }
 
-void ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin)
+void FreeBoard(Cell** board) // a function to free a board (mainly for the reset function)
 {
-    Cell **new_board = GenerateNewBoard(rows, columns, num_of_bombs);
+    if (board == NULL) return;
+    // free the actual data
+    free(board[0]);
+    // free the pointer to the data
+    free(board);
+}
 
-    last_board = new_board;
+Cell** ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin)
+{
+    if (last_board != NULL) {
+        FreeBoard(last_board);
+    }
+
+
+    Cell **new_board = GenerateNewBoard(rows, columns, num_of_bombs);
+    *cell_index = 0;
+
+
 
     // reset visual cells
     int currentCellPosX = 0;
@@ -437,5 +452,7 @@ void ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index 
         currentCellPosY += 32 * board_scale + margin;
         currentCellPosX = 0;
     }
+
+    return new_board;
 
 }
