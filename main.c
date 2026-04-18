@@ -28,7 +28,8 @@ typedef struct visualCell
 typedef enum {
     FACE_NATURAL = 0,
     FACE_SCARED = 1,
-    FACE_DEAD = 2
+    FACE_DEAD = 2,
+    FACE_HAPPY = 3
 } DudeState;
 
 typedef struct dude {
@@ -46,11 +47,18 @@ typedef struct BoardDifficulty{
     int board_scale;
 } BoardDifficulty;
 
+typedef enum {
+    IN_GAME,
+    LOST,
+    WON,
+} GameState;
+
+
 // declare functions
 Cell **GenerateNewBoard(int, int, int);
 void DiscoverEmptyCells(Cell**, VisualCell*, int, int, int, int);
 Cell **ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin);
-Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index, int difficulty, Vector2 board_offset, int margin, int* board_width_var, int* board_hight_var);
+Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index, int difficulty, Vector2 board_offset, int margin, int* board_width_var, int* board_hight_var, GameState* gamestatePtr);
 
 int main()
 {
@@ -78,7 +86,9 @@ int main()
     const int SCREEN_WIDTH = 800;
     const int SCREEN_HIGHT = 450;
 
-    InitWindow(SCREEN_WIDTH, SCREEN_HIGHT, "Mine Sweeper");
+    GameState gameState = IN_GAME;
+
+    InitWindow(SCREEN_WIDTH, SCREEN_HIGHT, "Mine Sweeper By Gur Dayan");
 
 
     // init things and load textures
@@ -198,7 +208,7 @@ int main()
                 if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect)){
                     scaredGuy.isPressed = false;
                     //board = ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
-                    board = ResetBoardViaDifficulty(board, visualCells, &cellIndex, current_selected_difficulty, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin, &BOARD_WIDTH, &BOARD_HIGHT);
+                    board = ResetBoardViaDifficulty(board, visualCells, &cellIndex, current_selected_difficulty, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin, &BOARD_WIDTH, &BOARD_HIGHT, &gameState);
                     //ResetBoard(board, BOARD_WIDTH, BOARD_HIGHT, NUM_OF_BOMBS);
                 }
 
@@ -239,7 +249,34 @@ int main()
 
 
 
+        // win / lose condition
 
+        int num_of_covered_safe_cells = 0;
+        if (gameState == IN_GAME){
+            for (int r = 0; r < BOARD_HIGHT; r++){
+
+
+                for (int c= 0; c < BOARD_WIDTH; c++){ // for each cell
+                    Cell currect_cell = board[r][c];
+
+                    if (currect_cell.isUncovered && currect_cell.value == -1){
+                        printf("lost");
+                        gameState = LOST;
+                        break;
+                    }
+                    if (!currect_cell.isUncovered && !(currect_cell.value == -1))
+                    {
+                        num_of_covered_safe_cells++;
+                    }
+                }
+            }
+
+            if (num_of_covered_safe_cells == 0){
+                printf("won");
+                gameState = WON;
+            }
+        }
+        printf("%i", gameState);
 
         is_mouse_0_down = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
         is_mouse_1_down = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
@@ -321,6 +358,7 @@ int main()
         EndDrawing();
         // --- END OF DRAWING ---
     }
+    CloseWindow();
 
     return 0;
 }
@@ -439,7 +477,7 @@ void FreeBoard(Cell** board) // a function to free a board (mainly for the reset
 
 
 
-Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index, int difficulty, Vector2 board_offset, int margin, int* board_width_var, int* board_hight_var){
+Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index, int difficulty, Vector2 board_offset, int margin, int* board_width_var, int* board_hight_var, GameState* gamestatePtr){
     BoardDifficulty d;
     switch (difficulty){
     case 0:
@@ -452,12 +490,15 @@ Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, i
         d = (BoardDifficulty){30, 16, 99, 2};
         break;
     case 3:
+
         d = (BoardDifficulty){50, 50, 625, 1}; // will cover your entire screen
         break;
     };
 
     *board_hight_var = d.hight;
     *board_width_var = d.width;
+
+    *gamestatePtr = IN_GAME;
 
     SetWindowSize((d.width * 32 * d.board_scale)  + board_offset.x, (d.hight * 32 * d.board_scale)  + board_offset.y);
     return ResetBoard(last_board, visual_cell_arr, cell_index, d.hight, d.width, d.num_of_bombs, d.board_scale, board_offset, margin);
