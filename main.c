@@ -128,6 +128,7 @@ int main()
     facesTextures[0] = LoadTexture("sprites\\face_natural.png"); // normal face
     facesTextures[1] = LoadTexture("sprites\\face_scared.png"); // scared face (when selecting cell)
     facesTextures[2] = LoadTexture("sprites\\face_dead.png"); // self explanitory
+    facesTextures[3] = LoadTexture("sprites\\face_happy.png"); // on winning
 
     // other symbols
     Texture *otherSymbols = malloc(2 * sizeof(Texture));
@@ -192,7 +193,7 @@ int main()
         // --- START OF UPDATE ---
         if (is_mouse_0_down){
 
-            if (GetMousePosition().y > BOARD_OFFSET_Y){ // the player is pressing on the board
+            if (GetMousePosition().y > BOARD_OFFSET_Y && gameState == IN_GAME){ // the player is pressing on the board
                 scaredGuy.state = FACE_SCARED;
             }
             else{
@@ -209,38 +210,45 @@ int main()
                     scaredGuy.isPressed = false;
                     //board = ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
                     board = ResetBoardViaDifficulty(board, visualCells, &cellIndex, current_selected_difficulty, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin, &BOARD_WIDTH, &BOARD_HIGHT, &gameState);
+                    // change scared guy pos to match the new windows size and match his rect
+                    scaredGuy.posX = GetScreenWidth() / 2 - 32;
+                    scaredGuy.btnRect = (Rectangle){scaredGuy.posX, scaredGuy.posY, 64, 64};
                     //ResetBoard(board, BOARD_WIDTH, BOARD_HIGHT, NUM_OF_BOMBS);
                 }
 
                 // board buttons
+                if (gameState == IN_GAME){ // only clickable in-game
+                    for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
+                        if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
+                            Cell* selected_cell = visualCells[c].assignedCell;
+                            if (!selected_cell->isFlagged && !isDifficultySelectionActive) // uncover cell
+                            {
+                                if (selected_cell->value == 0)
+                                    DiscoverEmptyCells(board, visualCells, c / BOARD_WIDTH, c % BOARD_WIDTH, BOARD_HIGHT, BOARD_WIDTH);
+                                visualCells[c].assignedCell->isUncovered = true;
+                            }
 
-                for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
-                    if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
-                        Cell* selected_cell = visualCells[c].assignedCell;
-                        if (!selected_cell->isFlagged && !isDifficultySelectionActive) // uncover cell
-                        {
-                            if (selected_cell->value == 0)
-                                DiscoverEmptyCells(board, visualCells, c / BOARD_WIDTH, c % BOARD_WIDTH, BOARD_HIGHT, BOARD_WIDTH);
-                            visualCells[c].assignedCell->isUncovered = true;
+                            break;
                         }
-
-                        break;
                     }
                 }
             }
 
         }
         else{
-            scaredGuy.state = FACE_NATURAL;
+            if (gameState == IN_GAME)
+                scaredGuy.state = FACE_NATURAL;
         }
 
         if (is_mouse_1_down){
 
             if (!IsMouseButtonDown(MOUSE_BUTTON_RIGHT)){ // on mouse 1 up
-                for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
-                    if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
-                        visualCells[c].assignedCell->isFlagged = !visualCells[c].assignedCell->isFlagged;
-                        break;
+                if (gameState == IN_GAME){
+                    for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
+                        if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
+                            visualCells[c].assignedCell->isFlagged = !visualCells[c].assignedCell->isFlagged;
+                            break;
+                        }
                     }
                 }
             }
@@ -262,6 +270,7 @@ int main()
                     if (currect_cell.isUncovered && currect_cell.value == -1){
                         printf("lost");
                         gameState = LOST;
+                        scaredGuy.state = FACE_DEAD;
                         break;
                     }
                     if (!currect_cell.isUncovered && !(currect_cell.value == -1))
@@ -273,10 +282,10 @@ int main()
 
             if (num_of_covered_safe_cells == 0){
                 printf("won");
+                scaredGuy.state = FACE_HAPPY;
                 gameState = WON;
             }
         }
-        printf("%i", gameState);
 
         is_mouse_0_down = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
         is_mouse_1_down = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
@@ -331,6 +340,9 @@ int main()
                     break;
                 case FACE_DEAD:
                     sg_current_appearance = facesTextures[2];
+                    break;
+                case FACE_HAPPY:
+                    sg_current_appearance = facesTextures[3];
                     break;
                 default:
                     sg_current_appearance = facesTextures[0];
