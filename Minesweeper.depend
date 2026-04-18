@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1776280902 source:c:\users\gur dayan\documents\c_learning\minesweeper\main.c
+1776446562 source:c:\users\gur dayan\documents\c_learning\minesweeper\main.c
 	<stdio.h>
 	<stdlib.h>
 	<time.h>

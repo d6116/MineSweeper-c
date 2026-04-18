@@ -39,10 +39,18 @@ typedef struct dude {
     bool isPressed;
 } Dude;
 
+typedef struct BoardDifficulty{
+    int width;
+    int hight;
+    int num_of_bombs;
+    int board_scale;
+} BoardDifficulty;
+
 // declare functions
 Cell **GenerateNewBoard(int, int, int);
 void DiscoverEmptyCells(Cell**, VisualCell*, int, int, int, int);
 Cell **ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin);
+Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index, int difficulty, Vector2 board_offset, int margin, int* board_width_var, int* board_hight_var);
 
 int main()
 {
@@ -132,7 +140,7 @@ int main()
 
     int margin = 0;
 
-    VisualCell *visualCells = malloc(sizeof(VisualCell) * BOARD_HIGHT * BOARD_WIDTH);
+    VisualCell *visualCells = malloc(sizeof(VisualCell) * 2500); // set to 2500 because it is the size of the hareders difficulty
     //Rectangle *cellsRects = malloc(sizeof(Rectangle) * BOARD_HIGHT * BOARD_WIDTH);
 
 
@@ -150,7 +158,7 @@ int main()
     scaredGuy.state = FACE_NATURAL;
     scaredGuy.posX = GetScreenWidth() / 2 - 32;
     scaredGuy.posY = 20;
-
+    scaredGuy.isPressed = false;
     scaredGuy.btnRect = (Rectangle){scaredGuy.posX, scaredGuy.posY, 64, 64};
 
 
@@ -164,6 +172,10 @@ int main()
     bool is_mouse_0_down = false; // left click
     bool is_mouse_1_down = false; // right click
 
+    // ui vars
+    int current_selected_difficulty = 0;      // Index of selected item
+    bool isDifficultySelectionActive = false;
+
     // Main Loop
     while (!WindowShouldClose())
     {
@@ -174,7 +186,7 @@ int main()
                 scaredGuy.state = FACE_SCARED;
             }
             else{
-                if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect)){
+                if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect) && !isDifficultySelectionActive){
                     scaredGuy.isPressed = true;
                 }
             }
@@ -185,7 +197,8 @@ int main()
                 // scared guy button
                 if (CheckCollisionPointRec(GetMousePosition(), scaredGuy.btnRect)){
                     scaredGuy.isPressed = false;
-                    board = ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
+                    //board = ResetBoard(board, visualCells, &cellIndex, BOARD_HIGHT, BOARD_WIDTH, NUM_OF_BOMBS, BOARD_SCALE, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin);
+                    board = ResetBoardViaDifficulty(board, visualCells, &cellIndex, current_selected_difficulty, (Vector2){BOARD_OFFSET_X, BOARD_OFFSET_Y}, margin, &BOARD_WIDTH, &BOARD_HIGHT);
                     //ResetBoard(board, BOARD_WIDTH, BOARD_HIGHT, NUM_OF_BOMBS);
                 }
 
@@ -194,7 +207,7 @@ int main()
                 for (int c = 0; c < cellIndex; c++){ // fore each cell check if the mouse is overlapping
                     if (CheckCollisionPointRec(GetMousePosition(), visualCells[c].btnRect)){
                         Cell* selected_cell = visualCells[c].assignedCell;
-                        if (!selected_cell->isFlagged) // uncover cell
+                        if (!selected_cell->isFlagged && !isDifficultySelectionActive) // uncover cell
                         {
                             if (selected_cell->value == 0)
                                 DiscoverEmptyCells(board, visualCells, c / BOARD_WIDTH, c % BOARD_WIDTH, BOARD_HIGHT, BOARD_WIDTH);
@@ -290,6 +303,19 @@ int main()
             DrawTextureEx(cellBackgroundTextures[scaredGuy.isPressed ? 1 : 0], (Vector2){scaredGuy.posX, scaredGuy.posY}, 0,  2, WHITE);
             DrawTextureEx(sg_current_appearance, (Vector2){scaredGuy.posX, scaredGuy.posY}, 0, 2 , WHITE);
 
+            //  difficulty changer
+            //int selected_difficulty =
+            // 1. Define state variables outside the main loop
+
+
+            // 2. Inside your drawing loop
+            GuiLabel((Rectangle){10, 10, 200, 20}, "Difficulty");
+            if (GuiDropdownBox((Rectangle){ 10, 40, 200, 30 }, "EASY;MEDDIUM;HARD;WILL COVER YOUR ENTIRE SCREEN", &current_selected_difficulty, isDifficultySelectionActive))
+{
+            // When clicked, toggle the edit mode
+                isDifficultySelectionActive = !isDifficultySelectionActive;
+                printf("%i", current_selected_difficulty);
+            }
 
 
         EndDrawing();
@@ -410,6 +436,34 @@ void FreeBoard(Cell** board) // a function to free a board (mainly for the reset
     // free the pointer to the data
     free(board);
 }
+
+
+
+Cell** ResetBoardViaDifficulty(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index, int difficulty, Vector2 board_offset, int margin, int* board_width_var, int* board_hight_var){
+    BoardDifficulty d;
+    switch (difficulty){
+    case 0:
+        d = (BoardDifficulty){9, 9, 10, 2};
+        break;
+    case 1:
+        d = (BoardDifficulty){16, 16, 40, 2};
+        break;
+    case 2:
+        d = (BoardDifficulty){30, 16, 99, 2};
+        break;
+    case 3:
+        d = (BoardDifficulty){50, 50, 625, 1}; // will cover your entire screen
+        break;
+    };
+
+    *board_hight_var = d.hight;
+    *board_width_var = d.width;
+
+    SetWindowSize((d.width * 32 * d.board_scale)  + board_offset.x, (d.hight * 32 * d.board_scale)  + board_offset.y);
+    return ResetBoard(last_board, visual_cell_arr, cell_index, d.hight, d.width, d.num_of_bombs, d.board_scale, board_offset, margin);
+
+}
+
 
 Cell** ResetBoard(Cell** last_board, VisualCell* visual_cell_arr, int* cell_index , int rows, int columns, int num_of_bombs, int board_scale, Vector2 board_offset, int margin)
 {
