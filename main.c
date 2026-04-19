@@ -65,21 +65,11 @@ int main()
 
     srand(time(NULL));
 
-    int BOARD_WIDTH = 16;
-    int BOARD_HIGHT = 10;
+    int BOARD_WIDTH = 9;
+    int BOARD_HIGHT = 9;
     int NUM_OF_BOMBS = 10;
 
-    int input_rows_result;
-    printf("Number of rows: (0 to skip config)\n");
-    scanf("%i", &input_rows_result);
 
-    if (!input_rows_result == 0){
-        BOARD_HIGHT = input_rows_result;
-        printf("Number of columns:\n ");
-        scanf("%i", &BOARD_WIDTH);
-        printf("Number of bombs:\n ");
-        scanf("%i", &NUM_OF_BOMBS);
-    }
 
 
 
@@ -131,10 +121,11 @@ int main()
     facesTextures[3] = LoadTexture("sprites\\face_happy.png"); // on winning
 
     // other symbols
-    Texture *otherSymbols = malloc(2 * sizeof(Texture));
+    Texture *otherSymbols = malloc(3 * sizeof(Texture));
 
     otherSymbols[0] = LoadTexture("sprites\\covered_tile_marked.png"); // marked bomb texture
     otherSymbols[1] = LoadTexture("sprites\\uncovered_bomb.png"); //bomb symbol
+    otherSymbols[2] = LoadTexture("sprites\\x.png"); // x for marking wrong markings
 
 
    // cells pos anc cell buttons and create rects for clicking the buttons
@@ -284,6 +275,18 @@ int main()
                 printf("won");
                 scaredGuy.state = FACE_HAPPY;
                 gameState = WON;
+
+                // flag all bomb tiles
+                for (int r = 0; r < BOARD_HIGHT; r++){
+                    for (int c= 0; c < BOARD_WIDTH; c++){ // for each cell
+                        Cell* currect_cell = &board[r][c];
+
+                        if (currect_cell->value == -1 && !currect_cell->isFlagged){
+                            currect_cell->isFlagged = true;
+                            printf("flagged");
+                        }
+                    }
+                }
             }
         }
 
@@ -315,11 +318,21 @@ int main()
                         else if (current_cell.assignedCell->value == -1){
                             DrawTextureEx(otherSymbols[1], pos, 0, current_cell.scale, WHITE); // draw bomb
                         }
+
                     }
                     else{
                         DrawTextureEx(cellBackgroundTextures[0], pos, 0, current_cell.scale, WHITE);
                         if (current_cell.assignedCell->isFlagged){
                             DrawTextureEx(otherSymbols[0], pos, 0, current_cell.scale, WHITE);
+                            if (current_cell.assignedCell->value != -1 && gameState != IN_GAME){ // if the player marked a wrong spot at end of game
+                                DrawTextureEx(otherSymbols[2], pos, 0, current_cell.scale, WHITE);
+                            }
+
+                        }
+                        else{
+                            if (current_cell.assignedCell->value == -1 && gameState != IN_GAME){ // if covered bomb at end of game, draw uncovered
+                                DrawTextureEx(otherSymbols[1], pos, 0, current_cell.scale, WHITE); // draw bomb
+                            }
                         }
                     }
             }
